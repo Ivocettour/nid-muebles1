@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Edit, Plus, Search, Trash2 } from "lucide-react";
 import type { Project } from "@/types";
 import { categories } from "@/data/categories";
@@ -53,7 +54,12 @@ export function AdminDashboard() {
       <section id="proyectos" className="grid gap-4">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
           <h1 className="font-display text-4xl font-semibold">Gestión de proyectos</h1>
-          <Button onClick={() => setEditing(null)}><Plus className="h-4 w-4" /> Nuevo proyecto</Button>
+          <div className="flex gap-3">
+            <Link href="/admin/proyectos/nuevo" className="inline-flex h-11 items-center justify-center gap-2 bg-graphite px-5 text-sm font-medium text-white transition hover:bg-black">
+              <Plus className="h-4 w-4" /> Nuevo proyecto
+            </Link>
+            <Button variant="secondary" onClick={() => setEditing(null)}><Plus className="h-4 w-4" /> Rápido</Button>
+          </div>
         </div>
         <label className="relative block">
           <Search className="absolute left-3 top-3.5 h-4 w-4 text-stone" />
@@ -74,7 +80,7 @@ export function AdminDashboard() {
                   <td><StatusBadge status={project.status} /></td>
                   <td>{project.featured ? "Sí" : "No"}</td>
                   <td className="p-4 text-right">
-                    <button className="mr-3 text-timber" onClick={() => setEditing(project)} aria-label={`Editar ${project.name}`}><Edit className="h-4 w-4" /></button>
+                    <Link className="mr-3 inline-flex text-timber" href={`/admin/proyectos/${project.id}/editar`} aria-label={`Editar ${project.name}`}><Edit className="h-4 w-4" /></Link>
                     <button className="text-red-700" onClick={() => onDelete(project)} aria-label={`Eliminar ${project.name}`}><Trash2 className="h-4 w-4" /></button>
                   </td>
                 </tr>

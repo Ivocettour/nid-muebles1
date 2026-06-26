@@ -49,7 +49,9 @@ export async function getCurrentUser() {
 
 export async function getUserGroups() {
   const session = await getCurrentSession();
-  return (session.tokens?.idToken?.payload["cognito:groups"] as string[] | undefined) ?? [];
+  const idTokenGroups = (session.tokens?.idToken?.payload["cognito:groups"] as string[] | undefined) ?? [];
+  const accessTokenGroups = (session.tokens?.accessToken?.payload["cognito:groups"] as string[] | undefined) ?? [];
+  return Array.from(new Set([...idTokenGroups, ...accessTokenGroups].map((group) => group.trim()).filter(Boolean)));
 }
 
 export function hasAdminAccess(groups: string[]) {

@@ -84,6 +84,15 @@ export class NidAwsStack extends Stack {
     const uploadsBucket = new s3.Bucket(this, "UploadsBucket", {
       bucketName: undefined,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+          allowedOrigins: ["http://localhost:3000", "https://*.amplifyapp.com"],
+          allowedHeaders: ["*"],
+          exposedHeaders: ["ETag"],
+          maxAge: 3000
+        }
+      ],
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,
       versioned: true,

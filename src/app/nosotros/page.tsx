@@ -18,7 +18,7 @@ export default function AboutPage() {
             Trabajamos con una metodología clara: escuchamos, medimos, diseñamos, seleccionamos materiales y fabricamos cada pieza con atención a sus detalles de uso. Nuestro objetivo es que el mueble se integre al espacio y mejore la vida cotidiana.
           </p>
           <p className="mt-5">
-            Valoramos la calidad de fabricación, la atención personalizada, el diseño funcional y el compromiso con las terminaciones. Estos textos y estadísticas pueden editarse desde la futura colección de contenido institucional en Firestore.
+            Valoramos la calidad de fabricación, la atención personalizada, el diseño funcional y el compromiso con las terminaciones. Estos textos y estadísticas pueden editarse desde el contenido institucional almacenado en DynamoDB.
           </p>
         </div>
       </div>

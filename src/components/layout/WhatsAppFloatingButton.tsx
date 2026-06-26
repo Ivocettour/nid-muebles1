@@ -1,9 +1,13 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { createWhatsAppLink } from "@/lib/whatsapp";
 
 export function WhatsAppFloatingButton() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <a
       href={createWhatsAppLink("Hola, quisiera solicitar un presupuesto para un mueble a medida.")}

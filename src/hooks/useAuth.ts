@@ -1,8 +1,18 @@
 "use client";
 
-import { confirmSignIn, fetchAuthSession, getCurrentUser, signIn, signOut, type AuthUser } from "aws-amplify/auth";
+import type { AuthUser } from "aws-amplify/auth";
 import { useEffect, useState } from "react";
-import { configureAmplify, isCognitoConfigured } from "@/lib/aws/amplify";
+import {
+  completeNewPasswordChallenge,
+  getCurrentUser,
+  getUserGroups,
+  hasAdminAccess,
+  isAmplifyAuthConfigured,
+  signInAdmin,
+  signOutAdmin,
+  translateCognitoError
+} from "@/lib/aws/auth";
+import { configureAmplifyAuth } from "@/lib/aws/amplify-config";
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -10,47 +20,69 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    configureAmplify();
-    if (!isCognitoConfigured()) {
+    configureAmplifyAuth();
+    if (!isAmplifyAuthConfigured()) {
       setLoading(false);
       return;
     }
+
     getCurrentUser()
       .then(async (currentUser) => {
         setUser(currentUser);
-        const session = await fetchAuthSession();
-        setGroups((session.tokens?.idToken?.payload["cognito:groups"] as string[] | undefined) ?? []);
+        setGroups(await getUserGroups());
       })
       .catch(() => {
         setUser(null);
         setGroups([]);
       })
       .finally(() => {
-      setLoading(false);
+        setLoading(false);
       });
   }, []);
 
   async function login(email: string, password: string) {
-    configureAmplify();
-    const result = await signIn({ username: email, password });
-    if (result.nextStep.signInStep === "CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED") {
-      throw new Error("Cognito requiere cambiar la contraseña inicial. Completá el cambio desde el flujo configurado en Cognito o agregá una pantalla de cambio de contraseña.");
+    try {
+      const result = await signInAdmin(email, password);
+      if (result.status === "newPasswordRequired") return result;
+      setUser(result.user);
+      setGroups(result.groups);
+      return result;
+    } catch (error) {
+      if (error instanceof Error && error.message === "admin-access-denied") {
+        throw new Error("No tenés permisos para acceder al panel.");
+      }
+      throw new Error(translateCognitoError(error));
     }
-    const currentUser = await getCurrentUser();
-    const session = await fetchAuthSession();
-    setUser(currentUser);
-    setGroups((session.tokens?.idToken?.payload["cognito:groups"] as string[] | undefined) ?? []);
   }
 
   async function completeNewPassword(newPassword: string) {
-    await confirmSignIn({ challengeResponse: newPassword });
+    try {
+      const result = await completeNewPasswordChallenge(newPassword);
+      setUser(result.user);
+      setGroups(result.groups);
+      return result;
+    } catch (error) {
+      if (error instanceof Error && error.message === "admin-access-denied") {
+        throw new Error("No tenés permisos para acceder al panel.");
+      }
+      throw new Error(translateCognitoError(error));
+    }
   }
 
   async function logout() {
-    await signOut();
+    await signOutAdmin();
     setUser(null);
     setGroups([]);
   }
 
-  return { user, groups, loading, login, logout, completeNewPassword, configured: isCognitoConfigured() };
+  return {
+    user,
+    groups,
+    loading,
+    login,
+    logout,
+    completeNewPassword,
+    configured: isAmplifyAuthConfigured(),
+    hasAccess: hasAdminAccess(groups)
+  };
 }

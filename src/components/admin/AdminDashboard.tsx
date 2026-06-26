@@ -17,7 +17,7 @@ export function AdminDashboard() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    listProjects().then(setItems).catch(() => setMessage("No se pudieron cargar proyectos de Firestore; se muestran datos demo."));
+    listProjects().then(setItems).catch(() => setMessage("No se pudieron cargar proyectos desde DynamoDB; se muestran datos demo."));
   }, []);
 
   const filtered = useMemo(() => {
@@ -98,7 +98,7 @@ export function AdminDashboard() {
 
       <section id="consultas" className="border border-graphite/10 bg-white p-5">
         <h2 className="font-display text-3xl font-semibold">Consultas recibidas</h2>
-        <p className="mt-2 text-sm leading-6 text-stone">Las solicitudes del formulario se guardan en Firestore cuando Firebase está configurado. Desde aquí se puede ampliar la lectura de `contactRequests`, cambiar estados, agregar notas internas y abrir WhatsApp.</p>
+        <p className="mt-2 text-sm leading-6 text-stone">Las solicitudes del formulario se guardan en DynamoDB cuando AWS está configurado. Desde aquí se puede ampliar la lectura de `contactRequests`, cambiar estados, agregar notas internas y abrir WhatsApp.</p>
       </section>
     </div>
   );

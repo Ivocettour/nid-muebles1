@@ -77,7 +77,7 @@ export function ContactForm() {
       <Field label="Descripción de la idea" error={errors.description?.message}>
         <textarea rows={5} {...register("description")} />
       </Field>
-      <p className="text-sm text-stone">Para adjuntar imágenes de referencia, continuá por WhatsApp luego de enviar. En producción se puede activar Firebase Storage para subirlas desde este formulario.</p>
+      <p className="text-sm text-stone">Para adjuntar imágenes de referencia, continuá por WhatsApp luego de enviar. En producción se puede activar S3 para subirlas desde este formulario.</p>
       <Field label="Método de contacto preferido" error={errors.preferredContactMethod?.message}>
         <select {...register("preferredContactMethod")}>
           <option value="whatsapp">WhatsApp</option>

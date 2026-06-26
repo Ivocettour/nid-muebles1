@@ -80,7 +80,7 @@ export function ProjectForm({ project, onSave, onCancel }: { project?: Project; 
       <Field label="Descripción" error={errors.description?.message}><textarea rows={4} {...register("description")} /></Field>
       <Field label="Características" error={errors.features?.message}><input placeholder="Separadas por coma" {...register("features")} /></Field>
       <Field label="Imagen principal" error={errors.mainImage?.message}><input {...register("mainImage")} /></Field>
-      <Field label="Imágenes adicionales" error={errors.images?.message}><textarea rows={3} placeholder="Una URL por línea. Para producción conectar ImageUploader con Firebase Storage." {...register("images")} /></Field>
+      <Field label="Imágenes adicionales" error={errors.images?.message}><textarea rows={3} placeholder="Una URL por línea. Para producción conectar ImageUploader con S3." {...register("images")} /></Field>
       <div className="grid gap-4 md:grid-cols-3">
         <Field label="Fecha" error={errors.completionDate?.message}><input type="month" {...register("completionDate")} /></Field>
         <Field label="Estado" error={errors.status?.message}>

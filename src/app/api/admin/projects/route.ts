@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = projectSchema.safeParse(body);
     if (!parsed.success) return jsonError("Datos inválidos.", 422);
+
     const now = new Date().toISOString();
     const project = {
       id: randomUUID(),
@@ -47,10 +48,15 @@ export async function POST(request: NextRequest) {
       createdBy: auth.sub,
       updatedBy: auth.sub
     };
+
     await putProject(project);
-    await writeAuditLog({ userId: auth.sub, email: auth.email, action: "create", entity: "project", entityId: project.id, description: project.name });
+    writeAuditLog({ userId: auth.sub, email: auth.email, action: "create", entity: "project", entityId: project.id, description: project.name }).catch((auditError) => {
+      console.error(JSON.stringify({ level: "warn", message: "Project audit log failed", detail: auditError instanceof Error ? auditError.message : "unknown" }));
+    });
+
     return jsonOk({ project }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error) return jsonError(error.message, 500);
     return handleApiError(error);
   }
 }

@@ -27,17 +27,25 @@ export function AdminDashboard() {
   }, [items, query]);
 
   async function onSave(project: Project) {
-    await saveProject(project);
-    setItems((current) => [project, ...current.filter((item) => item.id !== project.id)]);
-    setEditing(undefined);
-    setMessage("Proyecto guardado correctamente.");
+    try {
+      const savedProject = await saveProject(project);
+      setItems((current) => [savedProject, ...current.filter((item) => item.id !== project.id && item.id !== savedProject.id)]);
+      setEditing(undefined);
+      setMessage("Proyecto guardado correctamente.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar el proyecto.");
+    }
   }
 
   async function onDelete(project: Project) {
     if (!window.confirm(`¿Eliminar ${project.name}? Esta acción no se puede deshacer.`)) return;
-    await removeProject(project.id);
-    setItems((current) => current.filter((item) => item.id !== project.id));
-    setMessage("Proyecto eliminado.");
+    try {
+      await removeProject(project.id);
+      setItems((current) => current.filter((item) => item.id !== project.id));
+      setMessage("Proyecto eliminado.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo eliminar el proyecto.");
+    }
   }
 
   return (

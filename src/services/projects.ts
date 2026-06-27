@@ -10,17 +10,22 @@ async function authHeaders() {
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 }
 
+async function readError(response: Response, fallback: string) {
+  const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+  return payload?.error ?? fallback;
+}
+
 export async function listProjects(): Promise<Project[]> {
   try {
     const response = await fetch("/api/admin/projects", { headers: await authHeaders() });
-    if (!response.ok) throw new Error("No se pudieron cargar proyectos.");
+    if (!response.ok) throw new Error(await readError(response, "No se pudieron cargar proyectos."));
     return (await response.json()).projects as Project[];
   } catch {
     return demoProjects;
   }
 }
 
-export async function saveProject(project: Project) {
+export async function saveProject(project: Project): Promise<Project> {
   const payload = {
     ...project,
     materials: project.materials.join(", "),
@@ -28,12 +33,18 @@ export async function saveProject(project: Project) {
     features: project.features.join(", "),
     images: project.images.join("\n")
   };
-  const response = await fetch(project.id.startsWith("new-") ? "/api/admin/projects" : `/api/admin/projects/${project.id}`, {
-    method: project.id.startsWith("new-") ? "POST" : "PUT",
+
+  const isNew = project.id.startsWith("new-");
+  const response = await fetch(isNew ? "/api/admin/projects" : `/api/admin/projects/${project.id}`, {
+    method: isNew ? "POST" : "PUT",
     headers: await authHeaders(),
     body: JSON.stringify(payload)
   });
-  if (!response.ok) throw new Error("No se pudo guardar el proyecto.");
+
+  const result = (await response.json().catch(() => null)) as { project?: Project; error?: string } | null;
+  if (!response.ok) throw new Error(result?.error ?? "No se pudo guardar el proyecto.");
+  if (!result?.project) throw new Error("El servidor no devolvió el proyecto guardado.");
+  return result.project;
 }
 
 export async function removeProject(projectId: string) {
@@ -41,7 +52,7 @@ export async function removeProject(projectId: string) {
     method: "DELETE",
     headers: await authHeaders()
   });
-  if (!response.ok) throw new Error("No se pudo eliminar el proyecto.");
+  if (!response.ok) throw new Error(await readError(response, "No se pudo eliminar el proyecto."));
 }
 
 export async function updateProjectStatus(projectId: string, status: Project["status"]) {
@@ -50,5 +61,5 @@ export async function updateProjectStatus(projectId: string, status: Project["st
     method: "POST",
     headers: await authHeaders()
   });
-  if (!response.ok) throw new Error("No se pudo publicar el proyecto.");
+  if (!response.ok) throw new Error(await readError(response, "No se pudo publicar el proyecto."));
 }

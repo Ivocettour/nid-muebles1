@@ -25,9 +25,13 @@ export default function EditProjectPage() {
   }, [params.id]);
 
   async function onSave(updatedProject: Project) {
-    setMessage("");
-    await saveProject(updatedProject);
-    router.replace("/admin/proyectos");
+    try {
+      setMessage("");
+      await saveProject(updatedProject);
+      router.replace("/admin/proyectos");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar el proyecto.");
+    }
   }
 
   return (

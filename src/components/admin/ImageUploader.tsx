@@ -58,7 +58,10 @@ export function ImageUploader({ value, onChange }: { value: UploadedImage[]; onC
           body: JSON.stringify({ folder: "projects", contentType: file.type, size: file.size })
         });
 
-        if (!response.ok) throw new Error("No se pudo generar la URL de subida.");
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(payload?.error ?? "No se pudo generar la URL de subida.");
+        }
 
         const presigned = (await response.json()) as { key: string; uploadUrl: string; publicUrl: string };
         await putFile(presigned.uploadUrl, file, (progress) => {

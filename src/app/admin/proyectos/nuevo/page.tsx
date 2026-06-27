@@ -12,9 +12,13 @@ export default function NewProjectPage() {
   const [message, setMessage] = useState("");
 
   async function onSave(project: Project) {
-    setMessage("");
-    await saveProject(project);
-    router.replace("/admin/proyectos");
+    try {
+      setMessage("");
+      await saveProject(project);
+      router.replace("/admin/proyectos");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar el proyecto.");
+    }
   }
 
   return (

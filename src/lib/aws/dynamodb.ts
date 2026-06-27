@@ -1,9 +1,8 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { getAwsRegion, getRuntimeCredentials } from "@/lib/aws/credentials";
 
-const region = process.env.AWS_REGION ?? process.env.NEXT_PUBLIC_AWS_REGION ?? "us-east-1";
-
-const client = new DynamoDBClient({ region });
+const client = new DynamoDBClient({ region: getAwsRegion(), credentials: getRuntimeCredentials() });
 
 export const dynamo = DynamoDBDocumentClient.from(client, {
   marshallOptions: {

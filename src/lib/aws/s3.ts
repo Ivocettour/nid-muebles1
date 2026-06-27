@@ -3,7 +3,6 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
 const region = process.env.AWS_REGION ?? process.env.NEXT_PUBLIC_AWS_REGION ?? "us-east-1";
-const bucket = process.env.UPLOADS_BUCKET_NAME ?? "";
 
 export const s3 = new S3Client({ region });
 
@@ -23,6 +22,10 @@ export function safeImageExtension(contentType: string) {
   throw new Error("Tipo de imagen no permitido.");
 }
 
+function getUploadsBucketName() {
+  return process.env.UPLOADS_BUCKET_NAME ?? "";
+}
+
 export async function createPresignedUploadUrl({
   folder,
   contentType,
@@ -32,7 +35,10 @@ export async function createPresignedUploadUrl({
   contentType: string;
   size: number;
 }) {
-  if (!bucket) throw new Error("UPLOADS_BUCKET_NAME no está configurado.");
+  const bucket = getUploadsBucketName();
+  if (!bucket) {
+    throw new Error("UPLOADS_BUCKET_NAME no está disponible en el runtime de Amplify. Revisá la variable en la rama desplegada y hacé redeploy.");
+  }
   if (!allowedImageTypes.includes(contentType)) throw new Error("Tipo de imagen no permitido.");
   if (size > maxImageSizeBytes) throw new Error("La imagen supera el tamaño máximo permitido.");
 

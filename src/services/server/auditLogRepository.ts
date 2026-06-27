@@ -1,6 +1,6 @@
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
-import { dynamo, tables } from "@/lib/aws/dynamodb";
+import { getDynamo, tables } from "@/lib/aws/dynamodb";
 
 export async function writeAuditLog(input: {
   userId: string;
@@ -12,7 +12,7 @@ export async function writeAuditLog(input: {
   ip?: string;
   userAgent?: string;
 }) {
-  await dynamo.send(
+  await getDynamo().send(
     new PutCommand({
       TableName: tables.auditLogs,
       Item: {

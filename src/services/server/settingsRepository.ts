@@ -1,5 +1,5 @@
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { dynamo, tables } from "@/lib/aws/dynamodb";
+import { getDynamo, tables } from "@/lib/aws/dynamodb";
 
 export interface SiteSettings {
   id: "public";
@@ -16,10 +16,10 @@ export interface SiteSettings {
 }
 
 export async function getSettings() {
-  const result = await dynamo.send(new GetCommand({ TableName: tables.settings, Key: { id: "public" } }));
+  const result = await getDynamo().send(new GetCommand({ TableName: tables.settings, Key: { id: "public" } }));
   return (result.Item as SiteSettings | undefined) ?? null;
 }
 
 export async function putSettings(settings: SiteSettings) {
-  await dynamo.send(new PutCommand({ TableName: tables.settings, Item: settings }));
+  await getDynamo().send(new PutCommand({ TableName: tables.settings, Item: settings }));
 }

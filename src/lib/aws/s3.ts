@@ -1,9 +1,11 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
-import { getAwsRegion, getRuntimeCredentials } from "@/lib/aws/credentials";
+import { getAwsRegion, requireRuntimeCredentials } from "@/lib/aws/credentials";
 
-export const s3 = new S3Client({ region: getAwsRegion(), credentials: getRuntimeCredentials() });
+export function getS3Client() {
+  return new S3Client({ region: getAwsRegion(), credentials: requireRuntimeCredentials() });
+}
 
 export const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
 export const maxImageSizeBytes = 8 * 1024 * 1024;
@@ -48,7 +50,7 @@ export async function createPresignedUploadUrl({
     ContentType: contentType
   });
 
-  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+  const uploadUrl = await getSignedUrl(getS3Client(), command, { expiresIn: 300 });
   return {
     bucket,
     key,

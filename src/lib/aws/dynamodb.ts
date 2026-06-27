@@ -1,14 +1,21 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { getAwsRegion, getRuntimeCredentials } from "@/lib/aws/credentials";
+import { getAwsRegion, requireRuntimeCredentials } from "@/lib/aws/credentials";
 
-const client = new DynamoDBClient({ region: getAwsRegion(), credentials: getRuntimeCredentials() });
+let dynamoClient: DynamoDBDocumentClient | undefined;
 
-export const dynamo = DynamoDBDocumentClient.from(client, {
-  marshallOptions: {
-    removeUndefinedValues: true
+export function getDynamo() {
+  if (!dynamoClient) {
+    const client = new DynamoDBClient({ region: getAwsRegion(), credentials: requireRuntimeCredentials() });
+    dynamoClient = DynamoDBDocumentClient.from(client, {
+      marshallOptions: {
+        removeUndefinedValues: true
+      }
+    });
   }
-});
+
+  return dynamoClient;
+}
 
 export const tables = {
   projects: process.env.PROJECTS_TABLE_NAME ?? "nid-development-projects",

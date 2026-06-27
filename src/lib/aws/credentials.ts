@@ -17,3 +17,15 @@ export function getRuntimeCredentials(): AwsCredentialIdentity | undefined {
     sessionToken
   };
 }
+
+export function requireRuntimeCredentials(): AwsCredentialIdentity {
+  const credentials = getRuntimeCredentials();
+
+  if (!credentials) {
+    throw new Error(
+      "Faltan credenciales AWS del runtime. Configura NID_AWS_ACCESS_KEY_ID y NID_AWS_SECRET_ACCESS_KEY en las variables de entorno de Amplify y hace redeploy."
+    );
+  }
+
+  return credentials;
+}

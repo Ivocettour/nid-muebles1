@@ -1,7 +1,12 @@
 "use client";
 
 import { AdminPlaceholderPage } from "@/components/admin/AdminPlaceholderPage";
+import { ContactRequestManager } from "@/components/admin/ContactRequestManager";
 
 export default function AdminContactRequestsPage() {
-  return <AdminPlaceholderPage title="Consultas" description="Listado y cambio de estado de solicitudes mediante /api/admin/contact-requests y tabla nid-contact-requests." />;
+  return (
+    <AdminPlaceholderPage title="Consultas" description="Administracion de consultas">
+      <ContactRequestManager />
+    </AdminPlaceholderPage>
+  );
 }

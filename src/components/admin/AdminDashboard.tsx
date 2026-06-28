@@ -8,15 +8,20 @@ import { Button } from "@/components/shared/Button";
 import { ProjectForm } from "@/components/admin/ProjectForm";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { listProjects, removeProject, saveProject } from "@/services/projects";
+import { listContactRequests } from "@/services/contact";
 
 export function AdminDashboard() {
   const [items, setItems] = useState<Project[]>([]);
   const [editing, setEditing] = useState<Project | null | undefined>(undefined);
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
+  const [contactStats, setContactStats] = useState({ new: 0, pending: 0 });
 
   useEffect(() => {
     listProjects().then(setItems).catch((error) => setMessage(error instanceof Error ? error.message : "No se pudieron cargar proyectos desde DynamoDB."));
+    listContactRequests({ limit: 5 })
+      .then((result) => setContactStats({ new: result.stats.new, pending: result.stats.pending }))
+      .catch(() => undefined);
   }, []);
 
   const filtered = useMemo(() => {
@@ -52,7 +57,13 @@ export function AdminDashboard() {
         <Stat label="Proyectos" value={String(items.length)} />
         <Stat label="Publicados" value={String(items.filter((item) => item.status === "published").length)} />
         <Stat label="Destacados" value={String(items.filter((item) => item.featured).length)} />
-        <Stat label="Consultas nuevas" value="0" />
+        <Stat label="Consultas nuevas" value={String(contactStats.new)} />
+      </section>
+
+      <section className="border border-graphite/10 bg-white p-5">
+        <h2 className="font-display text-3xl font-semibold">Consultas pendientes</h2>
+        <p className="mt-2 text-sm text-stone">{contactStats.pending} consultas necesitan seguimiento.</p>
+        <Link href="/admin/consultas" className="mt-4 inline-flex text-sm font-medium text-timber">Ver consultas</Link>
       </section>
 
       {message ? <div className="border border-graphite/10 bg-linen p-4 text-sm">{message}</div> : null}

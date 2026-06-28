@@ -2,6 +2,20 @@ export type ProjectStatus = "draft" | "published" | "archived";
 export type ContactStatus = "new" | "read" | "contacted" | "quoted" | "accepted" | "inProduction" | "completed" | "discarded";
 export type PreferredContactMethod = "whatsapp" | "phone" | "email";
 
+export interface ContactReferenceImage {
+  key: string;
+  name?: string;
+  contentType?: string;
+  size?: number;
+}
+
+export interface ContactRequestHistoryEntry {
+  status: ContactStatus;
+  changedAt: string;
+  changedBy: string;
+  note?: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -50,10 +64,13 @@ export interface ContactRequest {
   approximateDimensions?: string;
   estimatedBudget?: string;
   description: string;
-  referenceImages: string[];
+  referenceImages: ContactReferenceImage[];
   preferredContactMethod: PreferredContactMethod;
   status: ContactStatus;
   internalNotes?: string;
+  readAt?: string;
+  contactedAt?: string;
+  statusHistory?: ContactRequestHistoryEntry[];
   createdAt: string;
   updatedAt: string;
 }

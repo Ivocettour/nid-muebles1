@@ -2,8 +2,9 @@ import { randomUUID } from "crypto";
 import { NextRequest } from "next/server";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api/response";
 import { verifyCognitoRequest } from "@/lib/auth/cognito";
+import { revalidatePublicProjects } from "@/lib/revalidation";
 import { projectSchema } from "@/lib/validations/project";
-import { listAllProjects, putProject } from "@/services/server/projectRepository";
+import { getProjectBySlug, listAllProjects, putProject } from "@/services/server/projectRepository";
 import { writeAuditLog } from "@/services/server/auditLogRepository";
 
 export async function GET(request: NextRequest) {
@@ -21,7 +22,9 @@ export async function POST(request: NextRequest) {
     const auth = await verifyCognitoRequest(request);
     const body = await request.json();
     const parsed = projectSchema.safeParse(body);
-    if (!parsed.success) return jsonError("Datos inválidos.", 422);
+    if (!parsed.success) return jsonError("Datos invalidos.", 422);
+    const duplicatedSlug = await getProjectBySlug(parsed.data.slug);
+    if (duplicatedSlug) return jsonError("Ya existe un proyecto con ese slug.", 409);
 
     const now = new Date().toISOString();
     const project = {
@@ -50,6 +53,7 @@ export async function POST(request: NextRequest) {
     };
 
     await putProject(project);
+    revalidatePublicProjects(project);
     writeAuditLog({ userId: auth.sub, email: auth.email, action: "create", entity: "project", entityId: project.id, description: project.name }).catch((auditError) => {
       console.error(JSON.stringify({ level: "warn", message: "Project audit log failed", detail: auditError instanceof Error ? auditError.message : "unknown" }));
     });

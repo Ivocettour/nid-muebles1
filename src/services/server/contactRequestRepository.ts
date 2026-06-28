@@ -1,3 +1,4 @@
+import "server-only";
 import { PutCommand, ScanCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import type { ContactRequest, ContactStatus } from "@/types";
 import { getDynamo, tables } from "@/lib/aws/dynamodb";

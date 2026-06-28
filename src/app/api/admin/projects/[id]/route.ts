@@ -1,8 +1,9 @@
 import { NextRequest } from "next/server";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api/response";
 import { canDelete, verifyCognitoRequest } from "@/lib/auth/cognito";
+import { revalidatePublicProjects } from "@/lib/revalidation";
 import { projectSchema } from "@/lib/validations/project";
-import { deleteProject, getProjectById, putProject } from "@/services/server/projectRepository";
+import { deleteProject, getProjectById, getProjectBySlug, putProject } from "@/services/server/projectRepository";
 import { writeAuditLog } from "@/services/server/auditLogRepository";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -12,7 +13,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const existing = await getProjectById(id);
     const body = await request.json();
     const parsed = projectSchema.safeParse(body);
-    if (!parsed.success) return jsonError("Datos inválidos.", 422);
+    if (!parsed.success) return jsonError("Datos invalidos.", 422);
+    const duplicatedSlug = await getProjectBySlug(parsed.data.slug);
+    if (duplicatedSlug && duplicatedSlug.id !== id) return jsonError("Ya existe un proyecto con ese slug.", 409);
 
     const now = new Date().toISOString();
     const updated = {
@@ -41,6 +44,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     };
 
     await putProject(updated);
+    revalidatePublicProjects(updated, existing?.slug);
     writeAuditLog({ userId: auth.sub, email: auth.email, action: existing ? "update" : "upsert", entity: "project", entityId: id, description: updated.name }).catch((auditError) => {
       console.error(JSON.stringify({ level: "warn", message: "Project audit log failed", detail: auditError instanceof Error ? auditError.message : "unknown" }));
     });
@@ -57,7 +61,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params;
     const auth = await verifyCognitoRequest(request, ["Admin"]);
     if (!canDelete(auth.groups)) return jsonError("Acceso denegado.", 403);
+    const existing = await getProjectById(id);
     await deleteProject(id);
+    revalidatePublicProjects(existing);
     writeAuditLog({ userId: auth.sub, email: auth.email, action: "delete", entity: "project", entityId: id }).catch((auditError) => {
       console.error(JSON.stringify({ level: "warn", message: "Project audit log failed", detail: auditError instanceof Error ? auditError.message : "unknown" }));
     });

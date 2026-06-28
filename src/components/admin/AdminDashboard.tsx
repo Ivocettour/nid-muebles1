@@ -4,21 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Edit, Plus, Search, Trash2 } from "lucide-react";
 import type { Project } from "@/types";
-import { categories } from "@/data/categories";
-import { projects as demoProjects } from "@/data/projects";
 import { Button } from "@/components/shared/Button";
 import { ProjectForm } from "@/components/admin/ProjectForm";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { listProjects, removeProject, saveProject } from "@/services/projects";
 
 export function AdminDashboard() {
-  const [items, setItems] = useState<Project[]>(demoProjects);
+  const [items, setItems] = useState<Project[]>([]);
   const [editing, setEditing] = useState<Project | null | undefined>(undefined);
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    listProjects().then(setItems).catch(() => setMessage("No se pudieron cargar proyectos desde DynamoDB; se muestran datos demo."));
+    listProjects().then(setItems).catch((error) => setMessage(error instanceof Error ? error.message : "No se pudieron cargar proyectos desde DynamoDB."));
   }, []);
 
   const filtered = useMemo(() => {
@@ -38,7 +36,7 @@ export function AdminDashboard() {
   }
 
   async function onDelete(project: Project) {
-    if (!window.confirm(`¿Eliminar ${project.name}? Esta acción no se puede deshacer.`)) return;
+    if (!window.confirm(`Eliminar ${project.name}? Esta accion no se puede deshacer.`)) return;
     try {
       await removeProject(project.id);
       setItems((current) => current.filter((item) => item.id !== project.id));
@@ -61,12 +59,12 @@ export function AdminDashboard() {
 
       <section id="proyectos" className="grid gap-4">
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-          <h1 className="font-display text-4xl font-semibold">Gestión de proyectos</h1>
+          <h1 className="font-display text-4xl font-semibold">Gestion de proyectos</h1>
           <div className="flex gap-3">
             <Link href="/admin/proyectos/nuevo" className="inline-flex h-11 items-center justify-center gap-2 bg-graphite px-5 text-sm font-medium text-white transition hover:bg-black">
               <Plus className="h-4 w-4" /> Nuevo proyecto
             </Link>
-            <Button variant="secondary" onClick={() => setEditing(null)}><Plus className="h-4 w-4" /> Rápido</Button>
+            <Button variant="secondary" onClick={() => setEditing(null)}><Plus className="h-4 w-4" /> Rapido</Button>
           </div>
         </div>
         <label className="relative block">
@@ -77,7 +75,7 @@ export function AdminDashboard() {
         <div className="overflow-x-auto border border-graphite/10 bg-white">
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-linen text-xs uppercase tracking-[0.14em] text-stone">
-              <tr><th className="p-4">Nombre</th><th>Categoría</th><th>Ambiente</th><th>Estado</th><th>Destacado</th><th className="text-right">Acciones</th></tr>
+              <tr><th className="p-4">Nombre</th><th>Categoria</th><th>Ambiente</th><th>Estado</th><th>Destacado</th><th className="text-right">Acciones</th></tr>
             </thead>
             <tbody>
               {filtered.map((project) => (
@@ -86,7 +84,7 @@ export function AdminDashboard() {
                   <td>{project.categoryName}</td>
                   <td>{project.environment}</td>
                   <td><StatusBadge status={project.status} /></td>
-                  <td>{project.featured ? "Sí" : "No"}</td>
+                  <td>{project.featured ? "Si" : "No"}</td>
                   <td className="p-4 text-right">
                     <Link className="mr-3 inline-flex text-timber" href={`/admin/proyectos/${project.id}/editar`} aria-label={`Editar ${project.name}`}><Edit className="h-4 w-4" /></Link>
                     <button className="text-red-700" onClick={() => onDelete(project)} aria-label={`Eliminar ${project.name}`}><Trash2 className="h-4 w-4" /></button>
@@ -98,21 +96,9 @@ export function AdminDashboard() {
         </div>
       </section>
 
-      <section id="categorias" className="border border-graphite/10 bg-white p-5">
-        <h2 className="font-display text-3xl font-semibold">Categorías</h2>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {categories.map((category) => (
-            <div key={category.id} className="border border-graphite/10 p-4">
-              <p className="font-semibold">{category.name}</p>
-              <p className="mt-1 text-xs text-stone">Orden {category.order} · {category.active ? "Activa" : "Inactiva"}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section id="consultas" className="border border-graphite/10 bg-white p-5">
         <h2 className="font-display text-3xl font-semibold">Consultas recibidas</h2>
-        <p className="mt-2 text-sm leading-6 text-stone">Las solicitudes del formulario se guardan en DynamoDB cuando AWS está configurado. Desde aquí se puede ampliar la lectura de `contactRequests`, cambiar estados, agregar notas internas y abrir WhatsApp.</p>
+        <p className="mt-2 text-sm leading-6 text-stone">Las solicitudes del formulario se guardan en DynamoDB cuando AWS esta configurado.</p>
       </section>
     </div>
   );

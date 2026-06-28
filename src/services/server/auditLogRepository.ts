@@ -1,3 +1,4 @@
+import "server-only";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "crypto";
 import { getDynamo, tables } from "@/lib/aws/dynamodb";

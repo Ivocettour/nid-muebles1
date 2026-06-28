@@ -1,6 +1,5 @@
 import { fetchAuthSession } from "aws-amplify/auth";
 import type { Project } from "@/types";
-import { projects as demoProjects } from "@/data/projects";
 import { configureAmplify } from "@/lib/aws/amplify";
 
 async function authHeaders() {
@@ -16,13 +15,9 @@ async function readError(response: Response, fallback: string) {
 }
 
 export async function listProjects(): Promise<Project[]> {
-  try {
-    const response = await fetch("/api/admin/projects", { headers: await authHeaders() });
-    if (!response.ok) throw new Error(await readError(response, "No se pudieron cargar proyectos."));
-    return (await response.json()).projects as Project[];
-  } catch {
-    return demoProjects;
-  }
+  const response = await fetch("/api/admin/projects", { headers: await authHeaders() });
+  if (!response.ok) throw new Error(await readError(response, "No se pudieron cargar proyectos."));
+  return (await response.json()).projects as Project[];
 }
 
 export async function saveProject(project: Project): Promise<Project> {

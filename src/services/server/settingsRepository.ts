@@ -1,3 +1,4 @@
+import "server-only";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { getDynamo, tables } from "@/lib/aws/dynamodb";
 
@@ -18,6 +19,10 @@ export interface SiteSettings {
 export async function getSettings() {
   const result = await getDynamo().send(new GetCommand({ TableName: tables.settings, Key: { id: "public" } }));
   return (result.Item as SiteSettings | undefined) ?? null;
+}
+
+export async function getSiteSettings() {
+  return getSettings();
 }
 
 export async function putSettings(settings: SiteSettings) {

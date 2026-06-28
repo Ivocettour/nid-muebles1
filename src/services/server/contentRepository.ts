@@ -1,3 +1,4 @@
+import "server-only";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { getDynamo, tables } from "@/lib/aws/dynamodb";
 
@@ -11,6 +12,10 @@ export interface SiteContentSection {
 export async function getContentSection(section: string) {
   const result = await getDynamo().send(new GetCommand({ TableName: tables.content, Key: { section } }));
   return (result.Item as SiteContentSection | undefined) ?? null;
+}
+
+export async function getSiteContent(section: string) {
+  return getContentSection(section);
 }
 
 export async function putContentSection(item: SiteContentSection) {

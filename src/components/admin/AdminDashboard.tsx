@@ -1,125 +1,226 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Edit, Plus, Search, Trash2 } from "lucide-react";
-import type { Project } from "@/types";
+import { FolderKanban, Inbox, Plus, RefreshCw, Tags, TextCursorInput } from "lucide-react";
 import { Button } from "@/components/shared/Button";
-import { ProjectForm } from "@/components/admin/ProjectForm";
-import { StatusBadge } from "@/components/admin/StatusBadge";
-import { listProjects, removeProject, saveProject } from "@/services/projects";
-import { listContactRequests } from "@/services/contact";
+import { contactStatusLabels, preferredContactLabels } from "@/lib/contact";
+import type { ProjectStatus } from "@/types";
+import { getAdminDashboard, type AdminDashboardData } from "@/services/adminDashboard";
+
+const projectStatusLabels: Record<ProjectStatus, string> = {
+  draft: "Borrador",
+  published: "Publicado",
+  archived: "Archivado"
+};
 
 export function AdminDashboard() {
-  const [items, setItems] = useState<Project[]>([]);
-  const [editing, setEditing] = useState<Project | null | undefined>(undefined);
-  const [query, setQuery] = useState("");
-  const [message, setMessage] = useState("");
-  const [contactStats, setContactStats] = useState({ new: 0, pending: 0 });
+  const [data, setData] = useState<AdminDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
-  useEffect(() => {
-    listProjects().then(setItems).catch((error) => setMessage(error instanceof Error ? error.message : "No se pudieron cargar proyectos desde DynamoDB."));
-    listContactRequests({ limit: 5 })
-      .then((result) => setContactStats({ new: result.stats.new, pending: result.stats.pending }))
-      .catch(() => undefined);
-  }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return items.filter((item) => [item.name, item.categoryName, item.environment].join(" ").toLowerCase().includes(q));
-  }, [items, query]);
-
-  async function onSave(project: Project) {
+  async function load() {
     try {
-      const savedProject = await saveProject(project);
-      setItems((current) => [savedProject, ...current.filter((item) => item.id !== project.id && item.id !== savedProject.id)]);
-      setEditing(undefined);
-      setMessage("Proyecto guardado correctamente.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo guardar el proyecto.");
+      setLoading(true);
+      setError("");
+      const next = await getAdminDashboard();
+      setData(next);
+      setUpdatedAt(new Date());
+    } catch {
+      setError("No pudimos cargar las estadisticas.");
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function onDelete(project: Project) {
-    if (!window.confirm(`Eliminar ${project.name}? Esta accion no se puede deshacer.`)) return;
-    try {
-      await removeProject(project.id);
-      setItems((current) => current.filter((item) => item.id !== project.id));
-      setMessage("Proyecto eliminado.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo eliminar el proyecto.");
-    }
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (loading && !data) {
+    return (
+      <div className="grid gap-6">
+        <div className="h-24 animate-pulse bg-white" />
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-28 animate-pulse bg-white" />)}
+        </div>
+        <div className="h-80 animate-pulse bg-white" />
+      </div>
+    );
   }
 
   return (
     <div className="grid gap-8">
-      <section className="grid gap-5 md:grid-cols-4">
-        <Stat label="Proyectos" value={String(items.length)} />
-        <Stat label="Publicados" value={String(items.filter((item) => item.status === "published").length)} />
-        <Stat label="Destacados" value={String(items.filter((item) => item.featured).length)} />
-        <Stat label="Consultas nuevas" value={String(contactStats.new)} />
-      </section>
-
-      <section className="border border-graphite/10 bg-white p-5">
-        <h2 className="font-display text-3xl font-semibold">Consultas pendientes</h2>
-        <p className="mt-2 text-sm text-stone">{contactStats.pending} consultas necesitan seguimiento.</p>
-        <Link href="/admin/consultas" className="mt-4 inline-flex text-sm font-medium text-timber">Ver consultas</Link>
-      </section>
-
-      {message ? <div className="border border-graphite/10 bg-linen p-4 text-sm">{message}</div> : null}
-
-      <section id="proyectos" className="grid gap-4">
-        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-          <h1 className="font-display text-4xl font-semibold">Gestion de proyectos</h1>
-          <div className="flex gap-3">
-            <Link href="/admin/proyectos/nuevo" className="inline-flex h-11 items-center justify-center gap-2 bg-graphite px-5 text-sm font-medium text-white transition hover:bg-black">
-              <Plus className="h-4 w-4" /> Nuevo proyecto
-            </Link>
-            <Button variant="secondary" onClick={() => setEditing(null)}><Plus className="h-4 w-4" /> Rapido</Button>
-          </div>
+      <section className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div>
+          <h1 className="font-display text-4xl font-semibold">Dashboard</h1>
+          <p className="mt-2 text-sm text-stone">Resumen real de proyectos, categorias, consultas y actividad administrativa.</p>
+          {updatedAt ? <p className="mt-2 text-xs text-stone">Ultima actualizacion: {updatedAt.toLocaleString("es-AR")}</p> : null}
         </div>
-        <label className="relative block">
-          <Search className="absolute left-3 top-3.5 h-4 w-4 text-stone" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} className="h-11 w-full border border-graphite/15 bg-white pl-10 pr-3" placeholder="Buscar proyectos" />
-        </label>
-        {editing !== undefined ? <ProjectForm project={editing ?? undefined} onSave={onSave} onCancel={() => setEditing(undefined)} /> : null}
-        <div className="overflow-x-auto border border-graphite/10 bg-white">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="bg-linen text-xs uppercase tracking-[0.14em] text-stone">
-              <tr><th className="p-4">Nombre</th><th>Categoria</th><th>Ambiente</th><th>Estado</th><th>Destacado</th><th className="text-right">Acciones</th></tr>
-            </thead>
-            <tbody>
-              {filtered.map((project) => (
-                <tr key={project.id} className="border-t border-graphite/10">
-                  <td className="p-4 font-medium">{project.name}</td>
-                  <td>{project.categoryName}</td>
-                  <td>{project.environment}</td>
-                  <td><StatusBadge status={project.status} /></td>
-                  <td>{project.featured ? "Si" : "No"}</td>
-                  <td className="p-4 text-right">
-                    <Link className="mr-3 inline-flex text-timber" href={`/admin/proyectos/${project.id}/editar`} aria-label={`Editar ${project.name}`}><Edit className="h-4 w-4" /></Link>
-                    <button className="text-red-700" onClick={() => onDelete(project)} aria-label={`Eliminar ${project.name}`}><Trash2 className="h-4 w-4" /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Button type="button" variant="secondary" onClick={load} disabled={loading}>
+          <RefreshCw className="h-4 w-4" /> Actualizar dashboard
+        </Button>
       </section>
 
-      <section id="consultas" className="border border-graphite/10 bg-white p-5">
-        <h2 className="font-display text-3xl font-semibold">Consultas recibidas</h2>
-        <p className="mt-2 text-sm leading-6 text-stone">Las solicitudes del formulario se guardan en DynamoDB cuando AWS esta configurado.</p>
-      </section>
+      {error ? <div className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div> : null}
+
+      {data ? (
+        <>
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            <Stat label="Proyectos" value={data.projects.total} />
+            <Stat label="Publicados" value={data.projects.published} />
+            <Stat label="Destacados" value={data.projects.featured} />
+            <Stat label="Consultas nuevas" value={data.contactRequests.new} />
+            <Stat label="Pendientes" value={data.contactRequests.pending} />
+            <Stat label="Categorias activas" value={data.categories.active} />
+          </section>
+
+          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            <QuickLink href="/admin/proyectos/nuevo" label="Nuevo proyecto" icon={<Plus className="h-4 w-4" />} />
+            <QuickLink href="/admin/proyectos" label="Ver proyectos" icon={<FolderKanban className="h-4 w-4" />} />
+            <QuickLink href="/admin/consultas" label="Ver consultas" icon={<Inbox className="h-4 w-4" />} />
+            <QuickLink href="/admin/categorias" label="Nueva categoria" icon={<Tags className="h-4 w-4" />} />
+            <QuickLink href="/admin/contenido" label="Editar contenido" icon={<TextCursorInput className="h-4 w-4" />} />
+            <QuickLink href="/" label="Ver sitio publico" />
+          </section>
+
+          <section className="grid gap-6 xl:grid-cols-2">
+            <Panel title="Consultas pendientes">
+              {data.pendingContactRequests.length ? (
+                data.pendingContactRequests.map((item) => (
+                  <Row key={item.id}>
+                    <div>
+                      <Link href={`/admin/consultas/${item.id}`} className="font-semibold hover:text-timber">{item.fullName}</Link>
+                      <p className="text-sm text-stone">{item.furnitureType} · {preferredContactLabels[item.preferredContactMethod]}</p>
+                    </div>
+                    <div className="text-right">
+                      <Badge>{contactStatusLabels[item.status]}</Badge>
+                      <p className="mt-1 text-xs text-stone">{new Date(item.createdAt).toLocaleDateString("es-AR")}</p>
+                    </div>
+                  </Row>
+                ))
+              ) : (
+                <Empty text="No hay consultas pendientes." />
+              )}
+            </Panel>
+
+            <Panel title="Ultimas consultas">
+              {data.recentContactRequests.length ? (
+                data.recentContactRequests.map((item) => (
+                  <Row key={item.id}>
+                    <div>
+                      <Link href={`/admin/consultas/${item.id}`} className="font-semibold hover:text-timber">{item.fullName}</Link>
+                      <p className="text-sm text-stone">{item.furnitureType}</p>
+                    </div>
+                    <div className="text-right">
+                      <Badge>{contactStatusLabels[item.status]}</Badge>
+                      <p className="mt-1 text-xs text-stone">{new Date(item.createdAt).toLocaleDateString("es-AR")}</p>
+                    </div>
+                  </Row>
+                ))
+              ) : (
+                <Empty text="Todavia no hay consultas." />
+              )}
+            </Panel>
+
+            <Panel title="Ultimos proyectos modificados">
+              {data.recentProjects.length ? (
+                data.recentProjects.map((project) => (
+                  <Row key={project.id}>
+                    <div>
+                      <Link href={`/admin/proyectos/${project.id}/editar`} className="font-semibold hover:text-timber">{project.name}</Link>
+                      <p className="text-sm text-stone">{project.categoryName} · {project.featured ? "Destacado" : "Sin destacar"}</p>
+                    </div>
+                    <div className="text-right">
+                      <Badge>{projectStatusLabels[project.status]}</Badge>
+                      <p className="mt-1 text-xs text-stone">{new Date(project.updatedAt).toLocaleDateString("es-AR")}</p>
+                    </div>
+                  </Row>
+                ))
+              ) : (
+                <Empty text="Todavia no hay proyectos." />
+              )}
+            </Panel>
+
+            <Panel title="Actividad reciente">
+              {data.recentActivity.length ? (
+                data.recentActivity.map((activity) => (
+                  <Row key={activity.id}>
+                    <div>
+                      <p className="font-semibold">{formatActivity(activity.action, activity.entity)}</p>
+                      <p className="text-sm text-stone">{activity.description || activity.entityId || "Sin detalle"}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-stone">{activity.email || activity.userId}</p>
+                      <p className="mt-1 text-xs text-stone">{new Date(activity.createdAt).toLocaleDateString("es-AR")}</p>
+                    </div>
+                  </Row>
+                ))
+              ) : (
+                <Empty text="Todavia no hay actividad registrada." />
+              )}
+            </Panel>
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="border border-graphite/10 bg-white p-5">
       <p className="font-display text-4xl font-semibold">{value}</p>
       <p className="mt-2 text-xs uppercase tracking-[0.16em] text-stone">{label}</p>
     </div>
   );
+}
+
+function QuickLink({ href, label, icon }: { href: string; label: string; icon?: React.ReactNode }) {
+  return (
+    <Link href={href} className="inline-flex h-11 items-center justify-center gap-2 border border-graphite/15 bg-white px-4 text-sm font-medium hover:border-timber">
+      {icon} {label}
+    </Link>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="border border-graphite/10 bg-white p-5">
+      <h2 className="font-display text-3xl font-semibold">{title}</h2>
+      <div className="mt-5 grid gap-3">{children}</div>
+    </section>
+  );
+}
+
+function Row({ children }: { children: React.ReactNode }) {
+  return <div className="flex items-start justify-between gap-4 border-t border-graphite/10 pt-3 first:border-t-0 first:pt-0">{children}</div>;
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex bg-linen px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em]">{children}</span>;
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="text-sm text-stone">{text}</p>;
+}
+
+function formatActivity(action: string, entity: string) {
+  const entityLabel: Record<string, string> = {
+    project: "Proyecto",
+    contactRequest: "Consulta",
+    category: "Categoria",
+    content: "Contenido",
+    settings: "Configuracion"
+  };
+  const actionLabel: Record<string, string> = {
+    create: "creado",
+    update: "actualizado",
+    upsert: "actualizado",
+    publish: "publicado",
+    delete: "eliminado",
+    read: "leida"
+  };
+  return `${entityLabel[entity] ?? entity} ${actionLabel[action] ?? action}`;
 }

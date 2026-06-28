@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { NextRequest } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { handleApiError, jsonError, jsonOk } from "@/lib/api/response";
 import { canDelete, verifyCognitoRequest } from "@/lib/auth/cognito";
@@ -20,6 +20,7 @@ function revalidateAdminContact(id: string) {
   revalidatePath("/admin");
   revalidatePath("/admin/consultas");
   revalidatePath(`/admin/consultas/${id}`);
+  revalidateTag("admin-dashboard");
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

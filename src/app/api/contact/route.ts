@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { getS3Client } from "@/lib/aws/s3";
@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
 
     revalidatePath("/admin");
     revalidatePath("/admin/consultas");
+    revalidateTag("admin-dashboard");
     writeAuditLog({ userId: "public", action: "create", entity: "contactRequest", entityId: id }).catch(() => undefined);
     return NextResponse.json({ success: true, id }, { status: 201 });
   } catch (error) {

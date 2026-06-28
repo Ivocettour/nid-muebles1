@@ -59,3 +59,37 @@ export async function createPresignedUploadUrl({
     expiresIn: 300
   };
 }
+
+export async function createContactRequestPresignedUploadUrl({
+  requestId,
+  contentType,
+  size
+}: {
+  requestId: string;
+  contentType: string;
+  size: number;
+}) {
+  const bucket = getUploadsBucketName();
+  if (!bucket) {
+    throw new Error("UPLOADS_BUCKET_NAME no esta disponible en el runtime de Amplify. Revisa la variable en la rama desplegada y hace redeploy.");
+  }
+  if (!/^[a-f0-9-]{36}$/i.test(requestId)) throw new Error("Solicitud invalida.");
+  if (!allowedImageTypes.includes(contentType)) throw new Error("Solo se permiten imagenes JPG, PNG o WEBP.");
+  if (size > maxImageSizeBytes) throw new Error("El archivo supera el tamano maximo.");
+
+  const key = `contact-requests/${requestId}/${randomUUID()}.${safeImageExtension(contentType)}`;
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ContentType: contentType
+  });
+
+  const uploadUrl = await getSignedUrl(getS3Client(), command, { expiresIn: 300 });
+  return {
+    bucket,
+    key,
+    uploadUrl,
+    publicUrl: cloudFrontUrl(key),
+    expiresIn: 300
+  };
+}

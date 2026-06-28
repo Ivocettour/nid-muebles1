@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Copy, Mail, MessageCircle, Phone, Trash2 } from "lucide-react";
+import Image from "next/image";
 import type { ContactRequest, ContactStatus } from "@/types";
 import { Button } from "@/components/shared/Button";
 import { contactReferenceUrl, contactStatusLabels, createClientWhatsAppLink, preferredContactLabels } from "@/lib/contact";
@@ -112,9 +113,12 @@ export function ContactRequestDetail({ id }: { id: string }) {
             {item.referenceImages.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {item.referenceImages.map((image) => (
-                  <a key={image.key} href={contactReferenceUrl(image.key)} target="_blank" rel="noreferrer" className="border border-graphite/10 p-3 text-sm hover:border-timber">
+                  <a key={image.key} href={contactReferenceUrl(image.key)} target="_blank" rel="noreferrer" className="grid gap-3 border border-graphite/10 p-3 text-sm hover:border-timber">
+                    <span className="relative block aspect-[4/3] overflow-hidden bg-linen">
+                      <Image src={contactReferenceUrl(image.key)} alt={image.name ?? "Referencia"} fill sizes="(min-width: 1024px) 240px, 50vw" className="object-cover" />
+                    </span>
                     <span className="block font-medium">{image.name ?? image.key.split("/").pop()}</span>
-                    <span className="mt-1 block text-xs text-stone">{image.contentType ?? "archivo"} {image.size ? `· ${Math.round(image.size / 1024)} KB` : ""}</span>
+                    <span className="block text-xs text-stone">{image.contentType ?? "archivo"} {image.size ? `- ${Math.round(image.size / 1024)} KB` : ""}</span>
                   </a>
                 ))}
               </div>

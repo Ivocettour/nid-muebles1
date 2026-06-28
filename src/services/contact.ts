@@ -1,5 +1,5 @@
 import { fetchAuthSession } from "aws-amplify/auth";
-import type { ContactRequest, ContactStatus } from "@/types";
+import type { ContactReferenceImage, ContactRequest, ContactStatus } from "@/types";
 import { configureAmplify } from "@/lib/aws/amplify";
 
 export interface ContactRequestListResponse {
@@ -35,7 +35,7 @@ async function readError(response: Response, fallback: string) {
   return payload?.error ?? payload?.errorInfo?.message ?? fallback;
 }
 
-export async function createContactRequest(data: Omit<ContactRequest, "id" | "status" | "createdAt" | "updatedAt" | "statusHistory"> & { company?: string; privacyAccepted?: boolean }) {
+export async function createContactRequest(data: Omit<ContactRequest, "id" | "status" | "createdAt" | "updatedAt" | "statusHistory"> & { requestId?: string; company?: string; privacyAccepted?: boolean }) {
   const response = await fetch("/api/contact", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -44,6 +44,49 @@ export async function createContactRequest(data: Omit<ContactRequest, "id" | "st
   const result = (await response.json().catch(() => null)) as { success?: boolean; id?: string; error?: { message?: string } } | null;
   if (!response.ok || !result?.success) throw new Error(result?.error?.message ?? "No se pudo enviar la consulta.");
   return result.id;
+}
+
+export async function getContactUploadUrl(input: { requestId: string; fileName: string; contentType: string; size: number }) {
+  const response = await fetch("/api/contact/uploads/presigned-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  const result = (await response.json().catch(() => null)) as { uploadUrl?: string; key?: string; error?: { message?: string } } | null;
+  if (!response.ok || !result?.uploadUrl || !result.key) throw new Error(result?.error?.message ?? "No pudimos preparar la imagen.");
+  return { uploadUrl: result.uploadUrl, key: result.key };
+}
+
+export function uploadReferenceImage({
+  file,
+  requestId,
+  onProgress
+}: {
+  file: File;
+  requestId: string;
+  onProgress?: (progress: number) => void;
+}): Promise<ContactReferenceImage> {
+  return new Promise((resolve, reject) => {
+    getContactUploadUrl({ requestId, fileName: file.name, contentType: file.type, size: file.size })
+      .then(({ uploadUrl, key }) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve({ key, name: file.name, contentType: file.type, size: file.size });
+          } else {
+            reject(new Error("No pudimos subir una imagen."));
+          }
+        };
+        xhr.onerror = () => reject(new Error("No pudimos subir una imagen."));
+        xhr.send(file);
+      })
+      .catch(reject);
+  });
 }
 
 export async function listContactRequests(params: Record<string, string | number | boolean | undefined> = {}): Promise<ContactRequestListResponse> {
